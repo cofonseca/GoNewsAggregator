@@ -12,7 +12,6 @@ type SiteMapList struct {
 	Url []string `xml:"sitemap>loc"`
 }
 
-// This is new.
 type NewsArticleList struct {
 	Article []NewsArticle `xml:"url"`
 }
@@ -54,7 +53,7 @@ func main() {
 		bytes := makeRequest(strings.TrimSpace(s.Url[i]))
 		xml.Unmarshal(bytes, &l)
 
-		for j, _ := range l.Article {
+		for j := range l.Article {
 			fmt.Println(j)
 			fmt.Println("Title:", l.Article[j].Title)
 			fmt.Println("Keywords:", l.Article[j].Keywords)
