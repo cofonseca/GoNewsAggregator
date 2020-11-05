@@ -1,0 +1,10 @@
+<h1>Today's News</h1>
+
+{{ with . }}
+    <h3>{{ .Category }}</h3>
+    {{ range .Article }}
+    <h4> {{ .Title }} </h4>
+    <p> {{ .DatePublished }} </p>
+    <p> {{ .ArticleURL }} </p>
+    {{ end }}
+{{ end }}

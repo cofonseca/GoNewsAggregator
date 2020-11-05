@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -13,18 +14,21 @@ type siteMapList struct {
 }
 
 type newsArticleList struct {
-	Article []newsArticle `xml:"url"`
+	Article  []newsArticle `xml:"url"`
+	Category string
 }
 
 type newsArticle struct {
-	Title    string `xml:"news>title"`
-	Keywords string `xml:"news>keywords"`
-	Location string `xml:"loc"`
+	Title         string `xml:"news>title"`
+	DatePublished string `xml:"news>publication_date"`
+	Keywords      string `xml:"news>keywords"`
+	ArticleURL    string `xml:"loc"`
+	// TODO: Category should be in here instead of newsArticleList
 }
 
-func makeRequest(url string) []byte {
+func makeRequest(URL string) []byte {
 	client := http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", URL, nil)
 	req.Header.Set("Connection", "Keep-Alive")
 	req.Header.Set("Accept-Language", "en-US")
 	req.Header.Set("User-Agent", "Mozilla/5.0")
@@ -41,25 +45,50 @@ func makeRequest(url string) []byte {
 	return bytes
 }
 
-func main() {
+func getArticlesFromSiteMap(URL string) newsArticleList {
+	// TODO: Make all of these requests in parallel!
 
+	var l newsArticleList
+	bytes := makeRequest(strings.TrimSpace(URL))
+	xml.Unmarshal(bytes, &l)
+
+	// Get the article category by parsing the URL
+	category := strings.Split(URL, "/")[4]
+	l.Category = strings.Split(category, ".")[0]
+
+	/* Uncomment this block to use JSON
+	jsonData, _ := json.Marshal(l)
+	fmt.Println(string(jsonData))*/
+
+	/*
+		for i := range l.Article {
+			fmt.Println("Title:", l.Article[i].Title)
+			fmt.Println("Category:", l.Category)
+			fmt.Println("Keywords:", l.Article[i].Keywords)
+			fmt.Println("Published:", l.Article[i].DatePublished)
+			fmt.Println("Location:", l.Article[i].ArticleURL)
+		}
+	*/
+
+	return l
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: Create separate NewsArticleLists split by category, and only display the articles from that category
 	var s siteMapList
 	bytes := makeRequest("https://www.washingtonpost.com/news-sitemaps/index.xml")
 	xml.Unmarshal(bytes, &s)
 
+	var data newsArticleList
 	for i := 0; i < (len(s.URL) - 1); i++ {
-
-		var l newsArticleList
-		bytes := makeRequest(strings.TrimSpace(s.URL[i]))
-		xml.Unmarshal(bytes, &l)
-
-		for j := range l.Article {
-			fmt.Println(j)
-			fmt.Println("Title:", l.Article[j].Title)
-			fmt.Println("Keywords:", l.Article[j].Keywords)
-			fmt.Println("Location:", l.Article[j].Location)
-		}
-
+		data = getArticlesFromSiteMap(s.URL[i])
 	}
 
+	template, _ := template.ParseFiles("newsTemplate.html")
+	template.Execute(w, data)
+}
+
+func main() {
+	http.HandleFunc("/", indexHandler)
+	http.ListenAndServe(":8000", nil)
 }
