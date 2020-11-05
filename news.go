@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-type SiteMapList struct {
-	Url []string `xml:"sitemap>loc"`
+type siteMapList struct {
+	URL []string `xml:"sitemap>loc"`
 }
 
-type NewsArticleList struct {
-	Article []NewsArticle `xml:"url"`
+type newsArticleList struct {
+	Article []newsArticle `xml:"url"`
 }
 
-type NewsArticle struct {
+type newsArticle struct {
 	Title    string `xml:"news>title"`
 	Keywords string `xml:"news>keywords"`
 	Location string `xml:"loc"`
@@ -43,14 +43,14 @@ func makeRequest(url string) []byte {
 
 func main() {
 
-	var s SiteMapList
+	var s siteMapList
 	bytes := makeRequest("https://www.washingtonpost.com/news-sitemaps/index.xml")
 	xml.Unmarshal(bytes, &s)
 
-	for i := 0; i < (len(s.Url) - 1); i++ {
+	for i := 0; i < (len(s.URL) - 1); i++ {
 
-		var l NewsArticleList
-		bytes := makeRequest(strings.TrimSpace(s.Url[i]))
+		var l newsArticleList
+		bytes := makeRequest(strings.TrimSpace(s.URL[i]))
 		xml.Unmarshal(bytes, &l)
 
 		for j := range l.Article {
