@@ -2,8 +2,8 @@
 
 {{ with . }}
     <h3>{{ .Category }}</h3>
-    {{ range .Article }}
-    <h4> {{ .Title }} </h4>
+    {{ range .Articles }}
+    <h4><a href="{{ .ArticleURL }}" target="_blank"> {{ .Title }} </a></h4>
     <p> {{ .DatePublished }} </p>
     <p> {{ .ArticleURL }} </p>
     {{ end }}

@@ -41,7 +41,7 @@ func makeRequest(URL string) []byte {
 	if err != nil {
 		fmt.Println(err)
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 	return bytes
 }
 
@@ -73,7 +73,13 @@ func getArticlesFromSiteMap(URL string) newsArticleList {
 	return l
 }
 
-func politicsHandler(data newsArticleList) http.HandlerFunc {
+func getArticleText(URL string) string {
+	// TODO: Go to the article URL and scrape the text from the body
+	var text string
+	return text
+}
+
+func newsHandler(data newsArticleList) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		template, err := template.ParseFiles("newsTemplate.html")
 		if err != nil {
@@ -109,9 +115,10 @@ func main() {
 		data := getArticlesFromSiteMap(s.URL[i])
 		categoryMap[data.Category] = data
 	}
-	fmt.Println(categoryMap["politics"])
 
-	http.HandleFunc("/politics", politicsHandler(categoryMap["politics"]))
+	for c := range categoryMap {
+		http.HandleFunc(("/" + c), newsHandler(categoryMap[c]))
+	}
 	http.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":8000", nil)
 }
