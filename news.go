@@ -14,7 +14,7 @@ type siteMapList struct {
 }
 
 type newsArticleList struct {
-	Article  []newsArticle `xml:"url"`
+	Articles []newsArticle `xml:"url"`
 	Category string
 }
 
@@ -62,11 +62,11 @@ func getArticlesFromSiteMap(URL string) newsArticleList {
 
 	/*
 		for i := range l.Article {
-			fmt.Println("Title:", l.Article[i].Title)
+			fmt.Println("Title:", l.Articles[i].Title)
 			fmt.Println("Category:", l.Category)
-			fmt.Println("Keywords:", l.Article[i].Keywords)
-			fmt.Println("Published:", l.Article[i].DatePublished)
-			fmt.Println("Location:", l.Article[i].ArticleURL)
+			fmt.Println("Keywords:", l.Articles[i].Keywords)
+			fmt.Println("Published:", l.Articles[i].DatePublished)
+			fmt.Println("Location:", l.Articles[i].ArticleURL)
 		}
 	*/
 
@@ -89,6 +89,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	var s siteMapList
+	bytes := makeRequest("https://www.washingtonpost.com/news-sitemaps/index.xml")
+	xml.Unmarshal(bytes, &s)
+
+	categoryMap := make(map[string]newsArticleList)
+	for i := 0; i < (len(s.URL) - 1); i++ {
+		data := getArticlesFromSiteMap(s.URL[i])
+		categoryMap[data.Category] = data
+	}
+
+	fmt.Println(categoryMap["politics"])
+
 	http.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":8000", nil)
 }
