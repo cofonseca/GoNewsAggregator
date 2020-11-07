@@ -73,6 +73,17 @@ func getArticlesFromSiteMap(URL string) newsArticleList {
 	return l
 }
 
+func politicsHandler(data newsArticleList) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		template, err := template.ParseFiles("newsTemplate.html")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		template.Execute(w, data)
+	}
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Create separate NewsArticleLists split by category, and only display the articles from that category
 	var s siteMapList
@@ -98,9 +109,9 @@ func main() {
 		data := getArticlesFromSiteMap(s.URL[i])
 		categoryMap[data.Category] = data
 	}
-
 	fmt.Println(categoryMap["politics"])
 
+	http.HandleFunc("/politics", politicsHandler(categoryMap["politics"]))
 	http.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":8000", nil)
 }
