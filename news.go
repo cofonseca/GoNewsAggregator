@@ -7,7 +7,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
+
+	"github.com/PuerkitoBio/goquery"
 )
+
+var wg sync.WaitGroup
+
+type articleText struct {
+	Paragraph []string
+}
 
 type siteMapList struct {
 	URL []string `xml:"sitemap>loc"`
@@ -23,7 +32,7 @@ type newsArticle struct {
 	DatePublished string `xml:"news>publication_date"`
 	Keywords      string `xml:"news>keywords"`
 	ArticleURL    string `xml:"loc"`
-	// TODO: Category should be in here instead of newsArticleList
+	ArticleText   articleText
 }
 
 func makeRequest(URL string) []byte {
@@ -56,27 +65,38 @@ func getArticlesFromSiteMap(URL string) newsArticleList {
 	category := strings.Split(URL, "/")[4]
 	l.Category = strings.Split(category, ".")[0]
 
-	/* Uncomment this block to use JSON
-	jsonData, _ := json.Marshal(l)
-	fmt.Println(string(jsonData))*/
-
-	/*
-		for i := range l.Article {
-			fmt.Println("Title:", l.Articles[i].Title)
-			fmt.Println("Category:", l.Category)
-			fmt.Println("Keywords:", l.Articles[i].Keywords)
-			fmt.Println("Published:", l.Articles[i].DatePublished)
-			fmt.Println("Location:", l.Articles[i].ArticleURL)
-		}
-	*/
-
 	return l
 }
 
-func getArticleText(URL string) string {
+func getArticleText(c chan newsArticle, article newsArticle) {
+	defer wg.Done()
 	// TODO: Go to the article URL and scrape the text from the body
-	var text string
-	return text
+	client := http.Client{}
+	req, _ := http.NewRequest("GET", article.ArticleURL, nil)
+	req.Header.Set("Connection", "Keep-Alive")
+	req.Header.Set("Accept-Language", "en-US")
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer resp.Body.Close()
+
+	var articleText articleText
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	doc.Find("p.pb-md").Each(func(i int, s *goquery.Selection) {
+		articleText.Paragraph = append(articleText.Paragraph, s.Text())
+	})
+
+	article.ArticleText = articleText
+
+	c <- article
 }
 
 func newsHandler(data newsArticleList) http.HandlerFunc {
@@ -86,24 +106,38 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 			fmt.Println(err)
 			return
 		}
+		Chan := make(chan newsArticle, len(data.Articles))
+		for i := range data.Articles {
+			wg.Add(1)
+			go getArticleText(Chan, data.Articles[i])
+		}
+		wg.Wait()
+		close(Chan)
+		for j := range Chan {
+			fmt.Println(j.Title)
+			fmt.Println(j.ArticleText)
+		}
+
 		template.Execute(w, data)
 	}
 }
 
+/*
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: Create separate NewsArticleLists split by category, and only display the articles from that category
+	// TODO: indexHandler should show the 2 latest news articles from each category
 	var s siteMapList
 	bytes := makeRequest("https://www.washingtonpost.com/news-sitemaps/index.xml")
 	xml.Unmarshal(bytes, &s)
 
 	var data newsArticleList
 	for i := 0; i < (len(s.URL) - 1); i++ {
-		data = getArticlesFromSiteMap(s.URL[i])
+		go getArticlesFromSiteMap(s.URL[i])
 	}
 
 	template, _ := template.ParseFiles("newsTemplate.html")
 	template.Execute(w, data)
 }
+*/
 
 func main() {
 	var s siteMapList
@@ -116,9 +150,16 @@ func main() {
 		categoryMap[data.Category] = data
 	}
 
+	// TODO: We shouldn't get the news for a category until someone navigates to the page...
+	// TODO: ...otherwise, the articles could be old and user won't see anything recent.
 	for c := range categoryMap {
 		http.HandleFunc(("/" + c), newsHandler(categoryMap[c]))
 	}
-	http.HandleFunc("/", indexHandler)
+	//http.HandleFunc("/", indexHandler)
+	//txt := getArticleText("https://www.washingtonpost.com/technology/2020/10/29/christie-cooney-cameo-gianforte-montana/")
+	//for _, p := range txt.Paragraph {
+	//	fmt.Println(p)
+	//	fmt.Println(" ")
+	//}
 	http.ListenAndServe(":8000", nil)
 }
