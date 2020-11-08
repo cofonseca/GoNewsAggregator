@@ -55,13 +55,10 @@ func makeRequest(URL string) []byte {
 }
 
 func getArticlesFromSiteMap(URL string) newsArticleList {
-	// TODO: Make all of these requests in parallel!
-
 	var l newsArticleList
 	bytes := makeRequest(strings.TrimSpace(URL))
 	xml.Unmarshal(bytes, &l)
 
-	// Get the article category by parsing the URL
 	category := strings.Split(URL, "/")[4]
 	l.Category = strings.Split(category, ".")[0]
 
@@ -70,7 +67,7 @@ func getArticlesFromSiteMap(URL string) newsArticleList {
 
 func getArticleText(c chan newsArticle, article newsArticle) {
 	defer wg.Done()
-	// TODO: Go to the article URL and scrape the text from the body
+
 	client := http.Client{}
 	req, _ := http.NewRequest("GET", article.ArticleURL, nil)
 	req.Header.Set("Connection", "Keep-Alive")
@@ -117,6 +114,7 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 		var news newsArticleList
 		news.Category = strings.Title(data.Category)
 		for n := range Chan {
+			// TODO: Convert date/time to a more readable format
 			news.Articles = append(news.Articles, n)
 		}
 
@@ -124,7 +122,6 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 	}
 }
 
-/*
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: indexHandler should show the 2 latest news articles from each category
 	var s siteMapList
@@ -139,7 +136,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	template, _ := template.ParseFiles("newsTemplate.html")
 	template.Execute(w, data)
 }
-*/
 
 func main() {
 	var s siteMapList
@@ -157,11 +153,9 @@ func main() {
 	for c := range categoryMap {
 		http.HandleFunc(("/" + c), newsHandler(categoryMap[c]))
 	}
-	//http.HandleFunc("/", indexHandler)
-	//txt := getArticleText("https://www.washingtonpost.com/technology/2020/10/29/christie-cooney-cameo-gianforte-montana/")
-	//for _, p := range txt.Paragraph {
-	//	fmt.Println(p)
-	//	fmt.Println(" ")
-	//}
+
+	// TODO: Handle this like the other routes.
+	// Pass in categories to create links to other pages by category.
+	http.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":8000", nil)
 }

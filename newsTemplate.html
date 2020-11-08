@@ -5,33 +5,56 @@
         <title>{{ .Category }} News</title>
     </head>
     <style>
-        .title {
+        .pageTitle {
             font-family: 'arial','sans-serif';
             margin: 0 auto;
             text-align: center;
             color: black;
+            font-size: 26px;
+            padding-bottom: 20px;
         }
+
+        .articleTitle {
+            font-family: 'arial','sans-serif';
+            margin: 0 auto;
+            text-align: center;
+            color: black;
+            font-size: 18px;
+        }
+
         .article {
             width: 80%;
             margin: 0 auto;
             background-color: #e6e6e6;
+            padding: 20px 20px 20px 20px;
+            margin-bottom: 20px;
         }
 
         .article > p {
             font-family: 'arial','sans-serif';
+            font-size: 14px;
+        }
+
+        a:link, a:visited, a:active {
+            color: black;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: black;
+            text-decoration: underline;
         }
     </style>
     <body>
-        <h1 class="title"> {{ .Category }} News </h1>
+        <h1 class="pageTitle"><strong> {{ .Category }} News </strong></h1>
         {{ with . }}
             {{ range .Articles }}
                 <div class="article">
-                <h4 class="title"><a href="{{ .ArticleURL }}" target="_blank"> {{ .Title }} </a></h4>
+                <h4 class="articleTitle"><a href="{{ .ArticleURL }}" target="_blank"> {{ .Title }} </a></h4>
                 <p><i> {{ .DatePublished }} </i></p>
                 {{ range .ArticleText.Paragraph }}
                     <p> {{ . }} </p>
                 {{ end }}
-                <hr>
                 </div>
             {{ end }}
         {{ end }}
