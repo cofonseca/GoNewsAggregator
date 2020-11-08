@@ -3,8 +3,12 @@
 {{ with . }}
     <h3>{{ .Category }}</h3>
     {{ range .Articles }}
-    <h4><a href="{{ .ArticleURL }}" target="_blank"> {{ .Title }} </a></h4>
-    <p> {{ .DatePublished }} </p>
-    <p> {{ .ArticleURL }} </p>
+        <h4><a href="{{ .ArticleURL }}" target="_blank"> {{ .Title }} </a></h4>
+        <p><i> {{ .DatePublished }} </i></p>
+        {{ range .ArticleText.Paragraph }}
+            <p> {{ . }} </p>
+        {{ end }}
+        <hr>
+        </br>
     {{ end }}
 {{ end }}

@@ -113,12 +113,14 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 		}
 		wg.Wait()
 		close(Chan)
-		for j := range Chan {
-			fmt.Println(j.Title)
-			fmt.Println(j.ArticleText)
+
+		var news newsArticleList
+		news.Category = data.Category
+		for n := range Chan {
+			news.Articles = append(news.Articles, n)
 		}
 
-		template.Execute(w, data)
+		template.Execute(w, news)
 	}
 }
 
