@@ -115,7 +115,7 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 		close(Chan)
 
 		var news newsArticleList
-		news.Category = data.Category
+		news.Category = strings.Title(data.Category)
 		for n := range Chan {
 			news.Articles = append(news.Articles, n)
 		}
