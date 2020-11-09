@@ -98,11 +98,6 @@ func getArticleText(c chan newsArticle, article newsArticle) {
 
 func newsHandler(data newsArticleList) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		template, err := template.ParseFiles("newsTemplate.html")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
 		Chan := make(chan newsArticle, len(data.Articles))
 		for i := range data.Articles {
 			wg.Add(1)
@@ -118,6 +113,11 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 			news.Articles = append(news.Articles, n)
 		}
 
+		template, err := template.ParseFiles("newsTemplate.html")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		template.Execute(w, news)
 	}
 }
@@ -133,7 +133,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		go getArticlesFromSiteMap(s.URL[i])
 	}
 
-	template, _ := template.ParseFiles("newsTemplate.html")
+	template, _ := template.ParseFiles("indexTemplate.html")
 	template.Execute(w, data)
 }
 
