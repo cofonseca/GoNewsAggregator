@@ -115,6 +115,7 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 
 		template, err := template.ParseFiles("newsTemplate.html")
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Println(err)
 			return
 		}
@@ -133,7 +134,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		go getArticlesFromSiteMap(s.URL[i])
 	}
 
-	template, _ := template.ParseFiles("indexTemplate.html")
+	template, err := template.ParseFiles("indexTemplate.html")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(err)
+	}
 	template.Execute(w, data)
 }
 
