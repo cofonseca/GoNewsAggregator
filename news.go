@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -15,7 +17,7 @@ import (
 var wg sync.WaitGroup
 
 type articleText struct {
-	Paragraph []string
+	Paragraph []string `json:"paragraphs"`
 }
 
 type siteMapList struct {
@@ -23,16 +25,21 @@ type siteMapList struct {
 }
 
 type newsArticleList struct {
-	Articles []newsArticle `xml:"url"`
-	Category string
+	Articles []newsArticle `xml:"url" json:"articles"`
+	Category string        `json:"category"`
+}
+
+func (n *newsArticleList) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(n)
 }
 
 type newsArticle struct {
-	Title         string `xml:"news>title"`
-	DatePublished string `xml:"news>publication_date"`
-	Keywords      string `xml:"news>keywords"`
-	ArticleURL    string `xml:"loc"`
-	ArticleText   articleText
+	Title         string      `xml:"news>title" json:"title"`
+	DatePublished string      `xml:"news>publication_date" json:"datePublished"`
+	Keywords      string      `xml:"news>keywords" json:"keywords"`
+	ArticleURL    string      `xml:"loc" json:"source"`
+	ArticleText   articleText `json:"body"`
 }
 
 func makeRequest(URL string) []byte {
@@ -77,6 +84,7 @@ func getArticleText(c chan newsArticle, article newsArticle) {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -85,6 +93,7 @@ func getArticleText(c chan newsArticle, article newsArticle) {
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	doc.Find("p.pb-md").Each(func(i int, s *goquery.Selection) {
@@ -120,6 +129,7 @@ func newsHandler(data newsArticleList) http.HandlerFunc {
 			return
 		}
 		template.Execute(w, news)
+		//fmt.Println(news.ToJSON(os.Stdout))
 	}
 }
 
